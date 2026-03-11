@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuis Ibn Al-Haytham</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;900&family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #d4b464;
+    --gold-dim: rgba(212,180,100,0.3);
+    --bg: #05080f;
+    --card: #0d1220;
+    --card2: #111827;
+    --blue: #1a5276;
+    --text: #e8e8f0;
+    --muted: rgba(232,232,240,0.45);
+    --correct: #27ae60;
+    --wrong: #c0392b;
+    --correct-bg: rgba(39,174,96,0.12);
+    --wrong-bg: rgba(192,57,43,0.12);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px 60px;
+  }
+
+  .wrapper { width: 100%; max-width: 720px; }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center;
+    margin-bottom: 36px;
+    animation: fadeDown 0.6s ease both;
+  }
+  .header .seri {
+    font-family: 'Lato', sans-serif;
+    font-size: 11px;
+    letter-spacing: 5px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    opacity: 0.7;
+  }
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(28px, 6vw, 46px);
+    font-weight: 900;
+    color: var(--gold);
+    line-height: 1;
+    text-shadow: 0 0 40px rgba(212,180,100,0.25);
+  }
+  .header h1 span { color: #fff; }
+  .header .sub {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    color: var(--muted);
+    font-size: 15px;
+    margin-top: 8px;
+  }
+  .gold-line {
+    width: 80px; height: 3px;
+    background: linear-gradient(to right, transparent, var(--gold), transparent);
+    margin: 16px auto 0;
+  }
+
+  /* ── PROGRESS ── */
+  .progress-bar-wrap {
+    background: rgba(255,255,255,0.06);
+    border-radius: 99px;
+    height: 6px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(to right, var(--blue), var(--gold));
+    border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+  .progress-label {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    margin-bottom: 24px;
+    text-align: right;
+  }
+
+  /* ── QUESTION CARD ── */
+  .q-card {
+    background: var(--card);
+    border: 1px solid rgba(212,180,100,0.12);
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 16px;
+    animation: fadeUp 0.4s ease both;
+    position: relative;
+    overflow: hidden;
+  }
+  .q-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(to right, var(--blue), var(--gold));
+  }
+
+  .q-number {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    opacity: 0.7;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+  }
+  .q-text {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.55;
+    color: var(--text);
+    margin-bottom: 24px;
+  }
+
+  /* ── OPTIONS ── */
+  .options { display: flex; flex-direction: column; gap: 10px; }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255,255,255,0.03);
+    position: relative;
+    overflow: hidden;
+  }
+  .option:hover:not(.locked) {
+    border-color: rgba(212,180,100,0.4);
+    background: rgba(212,180,100,0.06);
+    transform: translateX(4px);
+  }
+  .option.selected:not(.correct):not(.wrong) {
+    border-color: var(--gold);
+    background: rgba(212,180,100,0.1);
+  }
+  .option.correct {
+    border-color: var(--correct);
+    background: var(--correct-bg);
+  }
+  .option.wrong {
+    border-color: var(--wrong);
+    background: var(--wrong-bg);
+  }
+  .option.locked { cursor: default; }
+
+  .opt-letter {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .option.selected:not(.correct):not(.wrong) .opt-letter {
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+  .option.correct .opt-letter {
+    border-color: var(--correct);
+    background: var(--correct);
+    color: #fff;
+  }
+  .option.wrong .opt-letter {
+    border-color: var(--wrong);
+    background: var(--wrong);
+    color: #fff;
+  }
+
+  .opt-text { font-size: 15px; line-height: 1.4; flex: 1; }
+  .opt-icon { font-size: 18px; margin-left: auto; }
+
+  /* ── EXPLANATION ── */
+  .explanation {
+    margin-top: 18px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    border-left: 3px solid var(--gold);
+    background: rgba(212,180,100,0.07);
+    font-size: 14px;
+    color: rgba(232,232,240,0.75);
+    line-height: 1.6;
+    display: none;
+    animation: fadeUp 0.3s ease both;
+  }
+  .explanation.show { display: block; }
+  .explanation strong { color: var(--gold); }
+
+  /* ── BUTTONS ── */
+  .btn-row { display: flex; justify-content: flex-end; margin-top: 20px; }
+  .btn {
+    padding: 12px 32px;
+    border-radius: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-check {
+    background: linear-gradient(135deg, var(--blue), #1f6aa5);
+    color: #fff;
+    border: 1px solid rgba(212,180,100,0.3);
+  }
+  .btn-check:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(26,82,118,0.4); }
+  .btn-next {
+    background: linear-gradient(135deg, var(--gold), #c8952a);
+    color: #05080f;
+  }
+  .btn-next:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(212,180,100,0.35); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  /* ── RESULT ── */
+  .result {
+    display: none;
+    text-align: center;
+    animation: fadeUp 0.5s ease both;
+  }
+  .result.show { display: block; }
+
+  .result-card {
+    background: var(--card);
+    border: 1px solid rgba(212,180,100,0.2);
+    border-radius: 16px;
+    padding: 48px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(to right, var(--blue), var(--gold));
+  }
+
+  .result-emoji { font-size: 60px; margin-bottom: 16px; display: block; }
+  .result-title {
+    font-family: 'Cinzel', serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .result-score {
+    font-size: 64px;
+    font-weight: 900;
+    font-family: 'Cinzel', serif;
+    color: #fff;
+    line-height: 1;
+    margin: 16px 0;
+  }
+  .result-score span { color: var(--gold); }
+  .result-msg {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 400px;
+    margin: 0 auto 28px;
+    line-height: 1.6;
+  }
+
+  .score-breakdown {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 24px 0 32px;
+    flex-wrap: wrap;
+  }
+  .score-item {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 14px 24px;
+    text-align: center;
+  }
+  .score-item .si-val {
+    font-family: 'Cinzel', serif;
+    font-size: 26px;
+    font-weight: 700;
+    display: block;
+  }
+  .score-item .si-val.c { color: var(--correct); }
+  .score-item .si-val.w { color: var(--wrong); }
+  .score-item .si-label { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-top: 4px; display: block; }
+
+  .btn-restart {
+    background: linear-gradient(135deg, var(--gold), #c8952a);
+    color: #05080f;
+    padding: 14px 40px;
+    border-radius: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-restart:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(212,180,100,0.3); }
+
+  .by-tag {
+    margin-top: 24px;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.2);
+    text-transform: uppercase;
+  }
+  .by-tag strong { color: rgba(212,180,100,0.45); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="seri">🔭 Kuis Tokoh Ilmuwan Muslim</div>
+    <h1><span>Ibn</span> Al-Haytham</h1>
+    <p class="sub">Uji pemahamanmu tentang Bapak Optik Dunia</p>
+    <div class="gold-line"></div>
+  </div>
+
+  <!-- Quiz section -->
+  <div id="quiz-section">
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+    </div>
+    <div class="progress-label" id="progress-label">Soal 1 dari 10</div>
+
+    <div class="q-card" id="q-card">
+      <div class="q-number" id="q-number">Soal 1</div>
+      <div class="q-text" id="q-text"></div>
+      <div class="options" id="options"></div>
+      <div class="explanation" id="explanation"></div>
+      <div class="btn-row">
+        <button class="btn btn-check" id="btn-check" onclick="checkAnswer()" disabled>Periksa</button>
+        <button class="btn btn-next" id="btn-next" onclick="nextQuestion()" style="display:none">Selanjutnya →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result section -->
+  <div class="result" id="result-section">
+    <div class="result-card">
+      <span class="result-emoji" id="result-emoji"></span>
+      <div class="result-title" id="result-title"></div>
+      <div class="result-score" id="result-score"></div>
+      <div class="result-msg" id="result-msg"></div>
+      <div class="score-breakdown">
+        <div class="score-item">
+          <span class="si-val c" id="correct-count">0</span>
+          <span class="si-label">✅ Benar</span>
+        </div>
+        <div class="score-item">
+          <span class="si-val w" id="wrong-count">0</span>
+          <span class="si-label">❌ Salah</span>
+        </div>
+        <div class="score-item">
+          <span class="si-val" style="color:var(--gold)" id="pct-count">0%</span>
+          <span class="si-label">🎯 Akurasi</span>
+        </div>
+      </div>
+      <button class="btn-restart" onclick="restart()">🔁 Ulangi Kuis</button>
+      <div class="by-tag">Dibuat oleh <strong>Dante</strong></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const questions = [
+  {
+    q: "Di kota mana Ibn Al-Haytham dilahirkan?",
+    opts: ["Baghdad", "Kairo", "Basra", "Damaskus"],
+    ans: 2,
+    exp: "<strong>Basra</strong> adalah kota kelahiran Ibn Al-Haytham, sekitar tahun 965 M. Kota ini merupakan salah satu pusat peradaban ilmu pengetahuan pada masa kejayaan Islam."
+  },
+  {
+    q: "Pada tahun berapa Ibn Al-Haytham diperkirakan lahir?",
+    opts: ["756 M", "865 M", "965 M", "1065 M"],
+    ans: 2,
+    exp: "Ibn Al-Haytham lahir sekitar tahun <strong>965 M</strong> dan wafat sekitar tahun 1040 M, sehingga beliau hidup selama kurang lebih 75 tahun."
+  },
+  {
+    q: "Apa teori para ilmuwan Yunani (seperti Aristoteles) tentang cara kerja penglihatan manusia yang dibantah oleh Ibn Al-Haytham?",
+    opts: [
+      "Mata memantulkan cahaya dari benda di sekitarnya",
+      "Mata memancarkan sinar seperti senter ke arah objek",
+      "Cahaya bergerak dalam garis lengkung menuju mata",
+      "Otak yang langsung menangkap gambar tanpa melibatkan mata"
+    ],
+    ans: 1,
+    exp: "Aristoteles dan ilmuwan Yunani lainnya percaya bahwa <strong>mata memancarkan sinar</strong> ke objek, seperti senter. Ibn Al-Haytham membuktikan bahwa sebaliknyalah yang benar — objek memantulkan cahaya yang kemudian masuk ke mata kita."
+  },
+  {
+    q: "Eksperimen apa yang dilakukan Ibn Al-Haytham untuk membuktikan cara kerja cahaya dan penglihatan?",
+    opts: [
+      "Memantulkan cahaya matahari dengan cermin datar",
+      "Memasuki ruangan gelap dengan lubang kecil di dinding (Camera Obscura)",
+      "Mengamati bayangan benda di bawah air",
+      "Membakar lensa kaca untuk memusatkan cahaya"
+    ],
+    ans: 1,
+    exp: "<strong>Camera Obscura</strong> adalah eksperimen genius Ibn Al-Haytham: masuk ke ruangan gelap, melubangi dinding dengan lubang kecil, dan mengamati bayangan luar yang terpantul terbalik di dinding dalam. Ini membuktikan cahaya bergerak lurus dan mata menerima — bukan memancarkan — cahaya."
+  },
+  {
+    q: "Apa nama karya agung Ibn Al-Haytham tentang ilmu optik?",
+    opts: ["Kitab Al-Jabr", "Al-Qanun Fi Al-Tibb", "Kitab Al-Manazir", "Risalah Al-Falak"],
+    ans: 2,
+    exp: "<strong>Kitab Al-Manazir</strong> (Buku Optik) adalah mahakarya Ibn Al-Haytham yang terdiri dari 7 jilid. Buku ini menjadi rujukan para ilmuwan Eropa selama berabad-abad, termasuk Leonardo da Vinci dan Johannes Kepler."
+  },
+  {
+    q: "Berapa jilid Kitab Al-Manazir karya Ibn Al-Haytham?",
+    opts: ["3 jilid", "5 jilid", "7 jilid", "10 jilid"],
+    ans: 2,
+    exp: "Kitab Al-Manazir terdiri dari <strong>7 jilid</strong>, membahas secara menyeluruh tentang optik, cahaya, penglihatan, cermin, dan refraksi cahaya."
+  },
+  {
+    q: "Mengapa Ibn Al-Haytham berpura-pura gila di hadapan Khalifah Al-Hakim?",
+    opts: [
+      "Agar bisa kabur dari Mesir ke Irak",
+      "Untuk menghindari hukuman setelah gagal mengatur banjir Sungai Nil",
+      "Karena ingin mendapatkan ruangan pribadi untuk bereksperimen",
+      "Agar dibebaskan dari kewajiban mengajar di istana"
+    ],
+    ans: 1,
+    exp: "Proyek Ibn Al-Haytham untuk <strong>mengatur banjir Sungai Nil</strong> gagal karena teknologi yang tidak memadai. Karena Khalifah Al-Hakim dikenal keras dan tidak suka kegagalan, Ibn Al-Haytham berpura-pura gila agar tidak dihukum berat."
+  },
+  {
+    q: "Berapa lama Ibn Al-Haytham dikurung dalam tahanan rumah?",
+    opts: ["3 tahun", "5 tahun", "10 tahun", "15 tahun"],
+    ans: 2,
+    exp: "Ibn Al-Haytham dikurung selama kurang lebih <strong>10 tahun</strong> hingga wafatnya Khalifah Al-Hakim pada tahun 1021 M. Justru di masa inilah beliau menulis Kitab Al-Manazir."
+  },
+  {
+    q: "Siapa saja ilmuwan Eropa yang menjadikan Kitab Al-Manazir sebagai rujukan? (Pilih jawaban yang PALING lengkap)",
+    opts: [
+      "Galileo Galilei dan Isaac Newton",
+      "Leonardo da Vinci, Roger Bacon, dan Johannes Kepler",
+      "Copernicus dan René Descartes",
+      "Pythagoras dan Archimedes"
+    ],
+    ans: 1,
+    exp: "<strong>Leonardo da Vinci, Roger Bacon, dan Johannes Kepler</strong> adalah di antara ilmuwan Eropa yang menjadikan Kitab Al-Manazir sebagai rujukan utama mereka, membuktikan betapa besar pengaruh Ibn Al-Haytham terhadap perkembangan sains Barat."
+  },
+  {
+    q: "Berapa perkiraan total karya ilmiah yang dihasilkan Ibn Al-Haytham sepanjang hidupnya?",
+    opts: ["Lebih dari 50 karya", "Lebih dari 100 karya", "Lebih dari 200 karya", "Lebih dari 500 karya"],
+    ans: 2,
+    exp: "Ibn Al-Haytham menghasilkan <strong>lebih dari 200 karya ilmiah</strong> dalam bidang optik, matematika, astronomi, fisika, dan filsafat — sebuah produktivitas luar biasa yang menjadikannya salah satu ilmuwan paling berpengaruh sepanjang masa."
+  }
+];
+
+let current = 0;
+let score = 0;
+let wrongCount = 0;
+let selected = null;
+let answered = false;
+
+const letters = ['A','B','C','D'];
+
+function loadQuestion() {
+  const q = questions[current];
+  answered = false;
+  selected = null;
+
+  document.getElementById('q-number').textContent = `Soal ${current + 1}`;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('progress-label').textContent = `Soal ${current + 1} dari ${questions.length}`;
+  document.getElementById('progress-bar').style.width = `${(current / questions.length) * 100}%`;
+
+  const optContainer = document.getElementById('options');
+  optContainer.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `
+      <div class="opt-letter">${letters[i]}</div>
+      <div class="opt-text">${opt}</div>
+      <div class="opt-icon"></div>
+    `;
+    div.onclick = () => selectOption(i, div);
+    optContainer.appendChild(div);
+  });
+
+  const exp = document.getElementById('explanation');
+  exp.classList.remove('show');
+  exp.innerHTML = '';
+
+  document.getElementById('btn-check').disabled = true;
+  document.getElementById('btn-check').style.display = 'inline-block';
+  document.getElementById('btn-next').style.display = 'none';
+
+  // Animate card
+  const card = document.getElementById('q-card');
+  card.style.animation = 'none';
+  void card.offsetWidth;
+  card.style.animation = 'fadeUp 0.4s ease both';
+}
+
+function selectOption(index, el) {
+  if (answered) return;
+  selected = index;
+  document.querySelectorAll('.option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  document.getElementById('btn-check').disabled = false;
+}
+
+function checkAnswer() {
+  if (selected === null || answered) return;
+  answered = true;
+
+  const q = questions[current];
+  const opts = document.querySelectorAll('.option');
+
+  opts.forEach((o, i) => {
+    o.classList.add('locked');
+    if (i === q.ans) {
+      o.classList.add('correct');
+      o.querySelector('.opt-icon').textContent = '✅';
+    }
+  });
+
+  if (selected === q.ans) {
+    score++;
+  } else {
+    wrongCount++;
+    opts[selected].classList.add('wrong');
+    opts[selected].querySelector('.opt-icon').textContent = '❌';
+  }
+
+  const exp = document.getElementById('explanation');
+  exp.innerHTML = '💡 ' + q.exp;
+  exp.classList.add('show');
+
+  document.getElementById('btn-check').style.display = 'none';
+  const btnNext = document.getElementById('btn-next');
+  btnNext.style.display = 'inline-block';
+  btnNext.textContent = current < questions.length - 1 ? 'Selanjutnya →' : 'Lihat Hasil 🏆';
+}
+
+function nextQuestion() {
+  current++;
+  if (current < questions.length) {
+    loadQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  document.getElementById('quiz-section').style.display = 'none';
+  const resultSection = document.getElementById('result-section');
+  resultSection.classList.add('show');
+
+  const pct = Math.round((score / questions.length) * 100);
+  document.getElementById('correct-count').textContent = score;
+  document.getElementById('wrong-count').textContent = wrongCount;
+  document.getElementById('pct-count').textContent = pct + '%';
+  document.getElementById('result-score').innerHTML = `${score}<span>/${questions.length}</span>`;
+  document.getElementById('progress-bar').style.width = '100%';
+
+  let emoji, title, msg;
+  if (pct === 100) {
+    emoji = '🏆'; title = 'Sempurna!';
+    msg = 'Luar biasa! Kamu benar-benar menguasai materi Ibn Al-Haytham. Layak jadi penerus tradisi ilmiah beliau!';
+  } else if (pct >= 80) {
+    emoji = '🌟'; title = 'Hebat!';
+    msg = 'Pengetahuanmu tentang Ibn Al-Haytham sangat baik. Terus pertajam dengan membaca lebih dalam!';
+  } else if (pct >= 60) {
+    emoji = '📚'; title = 'Cukup Baik!';
+    msg = 'Kamu sudah memahami sebagian besar materi. Coba ulangi kuis untuk hasil yang lebih sempurna!';
+  } else if (pct >= 40) {
+    emoji = '🔍'; title = 'Perlu Belajar Lagi';
+    msg = 'Ada beberapa bagian yang perlu diperdalam. Baca ulang materinya dan coba lagi ya!';
+  } else {
+    emoji = '💪'; title = 'Jangan Menyerah!';
+    msg = 'Ibn Al-Haytham pun pernah gagal — tapi dia tidak berhenti belajar. Coba lagi dan kamu pasti bisa!';
+  }
+
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-msg').textContent = msg;
+}
+
+function restart() {
+  current = 0; score = 0; wrongCount = 0; selected = null; answered = false;
+  document.getElementById('result-section').classList.remove('show');
+  document.getElementById('quiz-section').style.display = 'block';
+  loadQuestion();
+}
+
+// Init
+loadQuestion();
+</script>
+</body>
+</html>
